@@ -8,13 +8,12 @@ type Props = {
 export default function Layout({ children }: Props) {
   return (
     <Flex
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      h="100vh"
+      alignItems="right"
+      justifyContent="right"
       bg="gray.800"
     >
       {children}
     </Flex>
   );
+  
 }
