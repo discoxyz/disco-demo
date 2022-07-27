@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useEthers } from "@usedapp/core";
-import { Input, Button, ButtonGroup } from '@chakra-ui/react'
+import { Input, Button, Link } from '@chakra-ui/react'
+import { profile } from 'console';
 
 type Props = {
   isOpen: any;
 };
 
 export default function DiscoComponent({isOpen}: Props) {
-  const [pageState, setPageState] = useState('edit');
-
-  const { activateBrowserWallet, account } = useEthers();
+  // const [pageState, setPageState] = useState('');
+  const [profileFound, setProfileFound] = useState('fetching');
+  const { account } = useEthers();
   // console.log("loaded dot env:" + process.env.REACT_APP_BEARER_TOKEN);
-  const [wallet, setWallet] = useState('');
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
 
@@ -52,49 +52,64 @@ export default function DiscoComponent({isOpen}: Props) {
         console.log(user_info);
         setName(user_info["profile"].name);
         setBio(user_info["profile"].bio);
-        setPageState('value');
+        // setPageState('fetched');
+        setProfileFound('found!');
+      } else { 
+        console.log("Profile not found!")
+        setProfileFound('not found');
       }
     } catch (e) {
       console.log(e);
     }
   };
 
-//   useEffect(async () => {
-//     const _currentAccount = await checkIfWalletIsConnected();
-//     setWallet(_currentAccount);
-//     const _requiredDeposit = await getRequiredDeposit();
-//     setRequiredDeposit(_requiredDeposit);
-//     await getUserEmail();
-//   }, []);
-
-  const renderEdit = () => {
+  const renderFetching = () => {
     return (
-      <div className='container'>
-        <h3>Disco User Profile</h3>
-        <div className='disco-form'>
-          <div className='form-row'>
-            <Input
-              placeholder='discord username'
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            ></Input>
-            <Input
-              placeholder='This is an example bio'
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-            ></Input>
-          </div>
+      <div onLoad= {() => getDiscoProfile()} className='container'>
+        <h3> <b> My Profile Details: </b> </h3>
+        <div>
+            <label>Connected Wallet: </label>
+              {account}
         </div>
+        <h3>Searching for Disco User Profile...</h3>
+        {/* <div> {getDiscoProfile()} </div>  */}
         <Button
-          onClick={getDiscoProfile}
+          variant='outline-secondary'
+          onClick={() => getDiscoProfile()}
         >
-          Click here to fetch Disco Profile!
+          Refresh
         </Button>
       </div>
     );
   }
 
-  const renderValue = () => {
+  const renderNotFound = () => {
+    return (
+      <div className='container'>
+        <h3> <b> My Profile Details: </b> </h3>
+        <div className='profile-form'>
+          <div className='form-row'>
+            <div>
+            <label>Connected Wallet: </label>
+              {account}
+            </div>
+          </div>
+          <div>
+            Sorry, no valid Disco Profile found for your ETH address. Please sign up 
+            <Link href="http://app.disco.xyz" target="_blank"> here.</Link>
+          </div>
+        </div>
+         <Button
+          variant='outline'
+          onClick={() => getDiscoProfile()}
+        >
+          Refresh
+        </Button>
+      </div>
+    );
+  }
+
+  const renderProfileFound = () => {
     return (
       <div className='container'>
         <h3> <b> My Profile Details: </b> </h3>
@@ -118,21 +133,24 @@ export default function DiscoComponent({isOpen}: Props) {
         </div>
          <Button
           variant='outline-secondary'
-          onClick={() => setPageState('edit')}
+          onClick={() => getDiscoProfile()}
         >
-          Go Back
+          Refresh
         </Button>
       </div>
     );
   }
 
-  const masterRender = (pageState: string) => {
-    if(pageState == 'edit') {
-      return renderEdit();
+  const masterRender = (profileFound: string) => {
+    if(profileFound === 'fetching') {
+      return renderFetching();
+    } else if (profileFound === 'not found') {
+      return renderNotFound();
     } else {
-      return renderValue();
+      return renderProfileFound();
     }
   }
 
-  return masterRender(pageState);
+  console.log("profileFound" + profileFound);
+  return masterRender(profileFound);
 }
