@@ -1,47 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import { useEthers } from "@usedapp/core";
-import { Input, Button, Link } from '@chakra-ui/react'
-import { profile } from 'console';
+import { Button, Container, Link, Text } from "@chakra-ui/react";
+import { Confetti } from "./Confetti";
 
-type Props = {
-  isOpen: any;
-};
-
-export default function DiscoComponent({isOpen}: Props) {
-  // const [pageState, setPageState] = useState('');
+export const DiscoComponent: React.FunctionComponent = () => {
   const DISCONAUT_CREDENTIAL = "OfficialDisconautCredential";
-  const [profileFound, setProfileFound] = useState('fetching');
+  const [profileFound, setProfileFound] = useState("test");
   const { account } = useEthers();
-  // console.log("loaded dot env:" + process.env.REACT_APP_BEARER_TOKEN);
-  const [name, setName] = useState('');
-  const [bio, setBio] = useState('');
-  const [twitter, setTwitter] = useState('');
-  const [discord, setDiscord] = useState('');
-  const [domain, setDomain] = useState('');
-  const [numCreds, setNumCreds] = useState(0);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [twitter, setTwitter] = useState("");
+  const [discord, setDiscord] = useState("");
+  const [domain, setDomain] = useState("");
+  const [numCreds, setNumCreds] = useState(-1);
   const [disconautCred, setDisconautCred] = useState(false);
 
+  useEffect(() => {
+    console.log("account state changed to", account);
+    if (account != undefined) {
+      getDiscoProfile();
+    }
+    if (account == undefined) {
+      setProfileFound("not found");
+    }
+  }, [account]);
+
   const getDiscoProfile = async () => {
-    // const base64 = require('base-64');
-
     console.log("eth address found: " + account);
-    const walletAddr = {account};
-    const disco_profile_by_address = process.env.REACT_APP_DISCO_API_URL + `/address/${walletAddr.account}`;
-    // console.log(disco_profile_by_address);
+    const walletAddr = { account };
+    const disco_profile_by_address =
+      process.env.REACT_APP_DISCO_API_URL + `/address/${walletAddr.account}`;
     const token = process.env.REACT_APP_BEARER_TOKEN;
-
     const headers = new Headers();
-
+    headers.set("Authorization", "Bearer " + token);
+    headers.set("Accept", "application/json");
+    headers.set("Content", "application/json");
+    headers.set("Access-Control-Allow-Origin", "*");
     headers.set(
-      'Authorization',
-      'Bearer ' + token,
-    );
-    headers.set('Accept', 'application/json');
-    headers.set('Content', 'application/json');
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept',
+      "Access-Control-Allow-Headers",
+      "Origin, X-Requested-With, Content-Type, Accept"
     );
 
     console.log(headers);
@@ -49,156 +46,204 @@ export default function DiscoComponent({isOpen}: Props) {
     try {
       console.log("querying disco api...");
       const response = await fetch(disco_profile_by_address, {
-        method: 'GET',
+        method: "GET",
         headers: headers,
       });
-      
+
       if (response.ok) {
         const user_info = await response.json();
+        console.log("USER INFO:");
         console.log(user_info);
-        setName(user_info["profile"].name);
-        setBio(user_info["profile"].bio);
-        setTwitter(user_info["linkages"]["twitter"].id);
-        setDiscord(user_info["linkages"]["discord"].id);
-        setDomain(user_info["linkages"]["dns"].id);
-        // setPageState('fetched');
-        setProfileFound('found!');
+        if (user_info["profile"]) {
+          setName(user_info["profile"].name);
+          setBio(user_info["profile"].bio);
+        }
+        user_info["linkages"]["twitter"]
+          ? setTwitter(user_info["linkages"]["twitter"].id)
+          : setTwitter("");
+        user_info["linkages"]["discord"]
+          ? setDiscord(user_info["linkages"]["discord"].id)
+          : setDiscord("");
+        user_info["linkages"]["dns"]
+          ? setDomain(user_info["linkages"]["dns"].id)
+          : setDomain("");
+
+        setProfileFound("found!");
 
         //check for credentials.
+        setDisconautCred(false);
         if (user_info["creds"].length > 0) {
           setNumCreds(user_info["creds"].length);
+          console.log(user_info["creds"]);
           //iterate thru array if credential is detected, set disconaut cred to true
-        
-          user_info["creds"].forEach((cred: { [x: string]: string | string[]; }) => {
-            console.log(cred['type']);
-            if (cred['type'].includes(DISCONAUT_CREDENTIAL)) {
-              console.log("credential found");
-              setDisconautCred(true);
+
+          user_info["creds"].forEach(
+            (cred: { [x: string]: string | string[] }) => {
+              console.log(cred["type"]);
+              if (cred["type"].includes(DISCONAUT_CREDENTIAL)) {
+                console.log("credential found");
+                setDisconautCred(true);
+              }
             }
-          });
+          );
         }
-      } else { 
-        console.log("Profile not found!")
-        setProfileFound('not found');
+      } else {
+        setProfileFound("not found");
       }
     } catch (e) {
+      console.log("CATCH");
       console.log(e);
     }
   };
 
   const renderFetching = () => {
     return (
-      <div onLoad= {() => getDiscoProfile()} className='container'>
-        <h3> <b> My Profile Details: </b> </h3>
-        <div>
+      <Container variant="container">
+        <Container variant="content">
+          <Text variant="heading">Disco Profile Details</Text>
+
+          <Text variant="details">
             <label>Connected Wallet: </label>
-              {account}
-        </div>
-        <h3>Searching for Disco User Profile...</h3>
-        <h4> Checking for credentials...</h4>
-        {/* <div> {getDiscoProfile()} </div>  */}
-        <Button
-          variant='outline-secondary'
-          onClick={() => getDiscoProfile()}
-        >
-          Refresh
-        </Button>
-      </div>
+            {account}
+          </Text>
+          <Button
+            variant="connectWallet"
+            mx="auto"
+            mt={4}
+            zIndex={1}
+            onClick={() => getDiscoProfile()}
+          >
+            Refresh
+          </Button>
+        </Container>
+      </Container>
     );
-  }
+  };
 
   const renderNotFound = () => {
     return (
-      <div className='container'>
-        <h3> <b> My Profile Details: </b> </h3>
-        <div className='profile-form'>
-          <div className='form-row'>
-            <div>
-            <label>Connected Wallet: </label>
-              {account}
-            </div>
-          </div>
-          <div>
-            Sorry, no valid Disco Profile found for your ETH address. Please create one
-            <Link href="http://app.disco.xyz" target="_blank"> here.</Link>
-          </div>
-        </div>
-         <Button
-          variant='outline'
-          onClick={() => getDiscoProfile()}
-        >
-          Refresh
-        </Button>
-      </div>
+      <Container variant="container">
+        <Container variant="content">
+          <Text variant="details" my={4}>
+            Sorry, no ETH address with a valid Disco Profile detected.
+            <br />
+            Please connect wallet or create a Disco Profile&nbsp;
+            <Link
+              variant="link"
+              href="https://app.disco.xyz/onboarding"
+              target="_blank"
+            >
+              here
+            </Link>
+            .
+          </Text>
+
+          <Button
+            variant="connectWallet"
+            mx="auto"
+            mt={4}
+            zIndex={1}
+            onClick={() => getDiscoProfile()}
+          >
+            Refresh
+          </Button>
+        </Container>
+      </Container>
     );
-  }
+  };
 
   const renderProfileFound = () => {
     return (
-      <div className='container'>
-        <h3> <b> My Profile Details: </b> </h3>
-        <div className='profile-form'>
-          <div className='form-row'>
-            <div>
-            <label>Connected Wallet: </label>
+      <Container variant="container">
+        <Container variant="content">
+          <Text variant="heading">Disco Profile Details</Text>
+          {account && (
+            <Text variant="details">
+              <label>Connected Wallet: </label>
               {account}
-            </div>
-          </div>
-          <div className='form-row'>
-            <div>
+            </Text>
+          )}
+
+          {name && (
+            <Text variant="details">
               <label>Name: </label>
-                {name}
-            </div>
-            <div>
+              {name}
+            </Text>
+          )}
+          {bio && (
+            <Text variant="details">
               <label>Bio: </label>
-                {bio}
-            </div>
-          </div>
-          <br/>
-          <h2> <b> Your connected accounts: </b></h2>
-          <div>
-            <div>
+              {bio}
+            </Text>
+          )}
+          {(name || bio) && <br />}
+
+          {twitter && !discord && !domain && (
+            <Text variant="details">
+              No Connected Accounts (should never see this)
+            </Text>
+          )}
+          {(twitter || discord || domain) && (
+            <Text variant="details" textDecoration="underline">
+              Connected Accounts
+            </Text>
+          )}
+          {twitter && (
+            <Text variant="details">
               <label> Twitter: </label>
-                {twitter}
-            </div>
-            <div>
+              {twitter}
+            </Text>
+          )}
+          {discord && (
+            <Text variant="details">
               <label> Discord: </label>
-                {discord}
-            </div>
-            <div>
+              {discord}
+            </Text>
+          )}
+          {domain && (
+            <Text variant="details">
               <label> Domain: </label>
-                {domain}
-            </div>
-          </div>
-          <br/>
-          <h2> <b> {numCreds} Credentials Found! </b></h2>
-          <div>
-            <div>
-              <label> Disco Credential: </label>
-                {disconautCred}
-            </div>
-          </div>
-        </div>
-         <Button
-          variant='outline-secondary'
-          onClick={() => getDiscoProfile()}
-        >
-          Refresh
-        </Button>
-      </div>
+              {domain}
+            </Text>
+          )}
+          <br />
+          {numCreds >= 0 && (
+            <Text variant="details">
+              {numCreds} Credential{numCreds === 1 ? "" : "s"} Found!
+            </Text>
+          )}
+          {disconautCred && (
+            <Text variant="details" fontWeight={700}>
+              &#x1F38A; Your official Disconaut credential is detected!
+              &#x1F38A;
+            </Text>
+          )}
+          {disconautCred && <Confetti />}
+          <Button
+            variant="connectWallet"
+            mx="auto"
+            mt={4}
+            zIndex={1}
+            onClick={() => getDiscoProfile()}
+          >
+            Refresh
+          </Button>
+        </Container>
+      </Container>
     );
-  }
+  };
 
   const masterRender = (profileFound: string) => {
-    if(profileFound === 'fetching') {
+    if (profileFound === "fetching") {
       return renderFetching();
-    } else if (profileFound === 'not found') {
+    } else if (profileFound === "not found") {
       return renderNotFound();
     } else {
       return renderProfileFound();
     }
-  }
+  };
 
-  console.log("profileFound" + profileFound);
+  console.log("profileFound " + profileFound);
+
   return masterRender(profileFound);
-}
+};

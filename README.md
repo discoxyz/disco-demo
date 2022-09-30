@@ -2,6 +2,7 @@
 
 This app displays the capabilities of using Disco! Uses etherjs and chakra-ui components.
 It can:
+
 - sign in with Metamask and connect wallet.
 - Look up ETH address or DID to see if profile exists. If it does, check for credentials.
 - If Disco Membership credential is present, display success page or modal (can be simple js alert for now).
